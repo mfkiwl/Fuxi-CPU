@@ -1,7 +1,7 @@
 package bus
 
 import chisel3._
-import chisel3.util.log2Ceil
+import chisel3.util.{isPow2, log2Ceil}
 
 import consts.Parameters._
 import consts.Paging._
@@ -29,6 +29,7 @@ class TLB(val size: Int) extends Module {
   })
 
   // some constants
+  require(isPow2(size), "TLB size must be a power of 2")
   val width = log2Ceil(size)
 
   // all TLB entries
@@ -45,7 +46,7 @@ class TLB(val size: Int) extends Module {
   // TLB flush/write
   when (io.flush) {
     // flush all valid bits
-    for (i <- 0 until size) valid(i) := false.B
+    valid.foreach(v => v := false.B)
   } .elsewhen (io.wen) {
     // write valid bit & data
     valid(pointer)      := true.B

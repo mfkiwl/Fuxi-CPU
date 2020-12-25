@@ -1,5 +1,7 @@
 # Fuxi
 
+[![Test](https://github.com/MaxXSoft/Fuxi/workflows/Test/badge.svg)](https://github.com/MaxXSoft/Fuxi)
+
 Fuxi (伏羲) is a 32-bit pipelined RISC-V processor written in Chisel3.
 
 ![datapath](img/datapath.svg)
@@ -13,6 +15,20 @@ Fuxi (伏羲) is a 32-bit pipelined RISC-V processor written in Chisel3.
 * A extension 2.0
 * Machine-level ISA 1.11
 * Supervisor-level ISA 1.11
+
+## Unimplemented Details
+
+Fuxi processor is designed for running [GeeOS](https://github.com/MaxXSoft/GeeOS), or other simple operating systems or bare-metal software. Considering the complexity, the following functions has not yet been implemented:
+
+* Memory privilege in `mstatus` register: `MPRV` bit and `MXR` bit are hardwired to 0.
+* Virtualization support in `mstatus` register: `TVM` bit, `TW` bit and `TSR` bit are hardwired to 0.
+
+## Performance
+
+With default configuration:
+
+* **Dhrystone 2.1**: 0.60 DMIPS/MHz.
+* **CoreMark**: 2.15 CoreMark/MHz.
 
 ## Getting Started
 
