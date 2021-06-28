@@ -20,16 +20,16 @@ class Uncached extends Module {
   val dataSize = log2Ceil(DATA_WIDTH / 8)
 
   // states of finite state machine
-  val (sIdle :: sReadAddr :: sReadData ::
-       sWriteAddr :: sWriteData :: sEnd :: Nil) = Enum(6)
+  val (sIdle :: sReadAddr :: sReadData :: sWriteAddr :: sWriteData ::
+       sReadEnd :: sWriteEnd :: Nil) = Enum(7)
   val state = RegInit(sIdle)
 
   // AXI control
-  val wen     = RegInit(false.B)
   val rdata   = Reg(UInt(DATA_WIDTH.W))
   val arvalid = state === sReadAddr
   val awvalid = state === sWriteAddr
   val rvalid  = io.axi.readData.valid && io.axi.readData.bits.last
+  val wvalid  = state === sWriteData
 
   // main finite state machine
   switch (state) {
@@ -46,7 +46,7 @@ class Uncached extends Module {
     is (sReadData) {
       when (rvalid) {
         rdata := io.axi.readData.bits.data
-        state := sEnd
+        state := sReadEnd
       }
     }
     is (sWriteAddr) {
@@ -55,18 +55,20 @@ class Uncached extends Module {
       }
     }
     is (sWriteData) {
-      wen := io.axi.writeData.ready && !io.axi.writeData.bits.last
-      when (io.axi.writeData.bits.last) {
-        state := sEnd
+      when (io.axi.writeData.ready) {
+        state := sWriteEnd
       }
     }
-    is (sEnd) {
+    is (sReadEnd) {
+      state := sIdle
+    }
+    is (sWriteEnd) {
       state := sIdle
     }
   }
 
   // SRAM signals
-  io.sram.valid := state === sEnd || rvalid
+  io.sram.valid := state === sWriteEnd || rvalid
   io.sram.fault := false.B
   io.sram.rdata := rdata
 
@@ -75,13 +77,14 @@ class Uncached extends Module {
   io.axi.readAddr.valid       := arvalid
   io.axi.readAddr.bits.addr   := io.sram.addr
   io.axi.readAddr.bits.size   := dataSize.U
+  io.axi.readAddr.bits.burst  := 1.U          // incrementing-address
   io.axi.readData.ready       := true.B
   io.axi.writeAddr.valid      := awvalid
   io.axi.writeAddr.bits.addr  := io.sram.addr
   io.axi.writeAddr.bits.size  := dataSize.U
-  io.axi.writeData.valid      := wen
+  io.axi.writeData.valid      := wvalid
   io.axi.writeData.bits.data  := io.sram.wdata
-  io.axi.writeData.bits.last  := wen
+  io.axi.writeData.bits.last  := wvalid
   io.axi.writeData.bits.strb  := io.sram.wen
   io.axi.writeResp.ready      := true.B
 }
